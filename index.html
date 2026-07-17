@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#12a894">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ثبت قرار ملاقات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #ffffff;
+    --bg-soft: #eef0f5;
+    --card: #ffffff;
+    --card-line: #dcdfe8;
+    --ink: #16151c;
+    --ink-dim: #6b6a78;
+    --amber: #e8790a;
+    --amber-soft: rgba(232,121,10,0.14);
+    --teal: #12a894;
+    --red: #e04438;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 85% -10%, rgba(232,121,10,0.16), transparent 45%),
+      radial-gradient(circle at -10% 110%, rgba(18,168,148,0.14), transparent 45%),
+      var(--bg);
+    min-height:100vh;
+    font-family:'Vazirmatn', sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 60px;
+  }
+  .app{ width:100%; max-width:460px; }
+
+  /* Top bar: page title + three-dot menu */
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .topbar-title{ font-size:22px; font-weight:900; color:var(--ink); }
+  .menu-wrap{ position:relative; }
+  .menu-btn{
+    width:38px; height:38px; border-radius:12px; border:1px solid var(--card-line);
+    background:var(--card); color:var(--ink); font-size:20px; font-weight:900; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .menu-btn:active{ transform:scale(0.96); }
+  .menu-dropdown{
+    position:absolute; top:44px; left:0; min-width:190px;
+    background:var(--card); border:1px solid var(--card-line); border-radius:14px;
+    box-shadow:0 10px 28px rgba(20,20,30,0.14); padding:6px; display:none; flex-direction:column; gap:2px;
+    z-index:20;
+  }
+  .menu-dropdown.open{ display:flex; }
+  .menu-dropdown button{
+    text-align:right; background:none; border:none; padding:10px 12px; border-radius:9px;
+    font-family:'Vazirmatn', sans-serif; font-size:13.5px; font-weight:600; color:var(--ink);
+    cursor:pointer;
+  }
+  .menu-dropdown button:hover{ background:var(--bg-soft); }
+
+  .app-footer{
+    text-align:right; font-size:10px; font-weight:600; color:var(--ink-dim);
+    margin-top:22px; letter-spacing:.2px; opacity:0.7;
+  }
+
+  /* Fullscreen overlay (onboarding + report) */
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,20,25,0.55);
+    display:none; align-items:flex-end; justify-content:center; z-index:100;
+  }
+  .overlay.open{ display:flex; }
+  .overlay-sheet{
+    background:var(--card); width:100%; max-width:460px; border-radius:20px 20px 0 0;
+    padding:22px 20px 26px; max-height:88vh; overflow-y:auto;
+    box-shadow:0 -10px 40px rgba(0,0,0,0.25);
+  }
+  .overlay-title{ font-size:17px; font-weight:900; color:var(--ink); margin-bottom:14px; }
+  .onb-step{ display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; }
+  .onb-emoji{
+    flex-shrink:0; width:38px; height:38px; border-radius:11px; background:var(--amber-soft);
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .onb-text b{ display:block; font-size:13.5px; color:var(--ink); margin-bottom:2px; }
+  .onb-text span{ font-size:12.5px; color:var(--ink-dim); line-height:1.8; }
+  .overlay-close-btn{
+    width:100%; margin-top:8px; background:var(--teal); color:#fff; border:none;
+    border-radius:12px; padding:13px; font-size:14px; font-weight:800; cursor:pointer;
+    font-family:'Vazirmatn', sans-serif;
+  }
+  .overlay-close-btn:active{ transform:scale(0.98); }
+
+  .report-tabs{ display:flex; gap:8px; margin-bottom:14px; }
+  .report-tab{
+    flex:1; text-align:center; padding:9px 6px; border-radius:10px; font-size:12.5px; font-weight:700;
+    background:var(--bg-soft); color:var(--ink-dim); cursor:pointer; border:1px solid var(--card-line);
+    font-family:'Vazirmatn', sans-serif;
+  }
+  .report-tab.active{ background:var(--teal); color:#fff; border-color:var(--teal); }
+  .report-section{ display:none; }
+  .report-section.active{ display:block; }
+  .report-row{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:10px 4px; border-bottom:1px solid var(--card-line); font-size:12.5px;
+  }
+  .report-row:last-child{ border-bottom:none; }
+  .report-row .rr-title{ font-weight:700; color:var(--ink); }
+  .report-row .rr-meta{ color:var(--ink-dim); font-size:11px; margin-top:2px; }
+  .report-row .rr-status{
+    flex-shrink:0; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px;
+  }
+  .rr-status.done{ background:rgba(18,168,148,0.14); color:#0b6d5f; }
+  .rr-status.pending{ background:var(--bg-soft); color:var(--ink-dim); }
+  .rr-status.active{ background:rgba(232,121,10,0.14); color:#a15a06; }
+  .report-empty{ text-align:center; color:var(--ink-dim); font-size:12.5px; padding:20px 0; }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--card-line);
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:16px;
+    box-shadow: 0 2px 10px rgba(20,20,30,0.04);
+  }
+  .card h2{ font-size:14px; font-weight:700; margin-bottom:14px; color:var(--ink); }
+
+  /* Calendar */
+  .cal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .cal-header button{
+    background:var(--bg-soft); border:1px solid var(--card-line); color:var(--ink);
+    width:32px; height:32px; border-radius:10px; cursor:pointer; font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cal-header .month-label{ font-size:15px; font-weight:700; }
+
+  .weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px; }
+  .weekdays span{ text-align:center; font-size:11px; color:var(--ink-dim); font-weight:600; }
+
+  .days-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .day-cell{
+    aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+    border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
+    color:var(--ink); background:var(--bg-soft); font-variant-numeric:tabular-nums;
+    transition:.12s;
+  }
+  .day-cell.empty{ background:none; cursor:default; }
+  .day-cell:hover:not(.empty){ background:#e2e5ee; }
+  .day-cell.today{ box-shadow: inset 0 0 0 2px var(--teal); color:var(--teal); }
+  .day-cell.selected{ background: var(--amber); color:#fff; box-shadow: 0 4px 12px rgba(232,121,10,0.35); }
+
+  /* Time picker */
+  .time-picker{ display:flex; justify-content:center; align-items:center; gap:10px; }
+  .time-picker select{
+    background:var(--bg-soft); border:1px solid var(--card-line); color:var(--ink);
+    font-size:26px; font-weight:800; font-variant-numeric:tabular-nums;
+    border-radius:12px; padding:10px 6px; text-align:center; width:74px;
+    font-family:'Vazirmatn', sans-serif; appearance:none;
+  }
+  .time-sep{ font-size:24px; font-weight:800; color:var(--ink-dim); }
+
+  /* Fields */
+  .field{ margin-bottom:14px; }
+  .field:last-child{ margin-bottom:0; }
+  .field label{ font-size:12px; color:var(--ink-dim); display:block; margin-bottom:8px; font-weight:600; }
+  .field input[type=text], .field textarea, .field select.full{
+    width:100%; background:var(--bg-soft); border:1px solid var(--card-line);
+    color:var(--ink); border-radius:10px; padding:12px 14px; font-size:14px;
+    font-family:'Vazirmatn', sans-serif;
+  }
+  .field textarea{ resize:vertical; min-height:64px; }
+  .row2{ display:flex; gap:10px; }
+  .row2 .field{ flex:1; }
+
+  .chip-group{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{
+    padding:9px 14px; border-radius:999px; background:var(--bg-soft); border:1px solid var(--card-line);
+    color:var(--ink-dim); font-size:12px; cursor:pointer; font-family:'Vazirmatn', sans-serif;
+  }
+  .chip.active{ background:var(--teal); color:#ffffff; border-color:var(--teal); font-weight:700; }
+
+  /* Summary */
+  .summary{
+    display:flex; align-items:center; gap:12px; padding:14px 16px;
+    background:var(--amber-soft); border-radius:14px; margin-bottom:16px;
+    font-size:13px; color:var(--amber); font-weight:600;
+  }
+  .summary .dot{ width:8px; height:8px; border-radius:50%; background:var(--amber); flex-shrink:0; }
+
+  .generate-btn{
+    width:100%; padding:16px; border-radius:14px; border:none;
+    background: linear-gradient(180deg, #f0910f, var(--amber));
+    color:#ffffff; font-weight:800; font-size:16px; cursor:pointer;
+    box-shadow: 0 10px 24px rgba(232,121,10,0.32);
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .generate-btn:active{ transform: scale(0.98); }
+  .generate-btn.done{ background: linear-gradient(180deg, #0fae97, var(--teal)); }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--teal); color:#ffffff; padding:14px 22px; border-radius:12px;
+    font-size:15px; font-weight:800; opacity:0; pointer-events:none; transition:.25s;
+    white-space:nowrap; box-shadow:0 8px 20px rgba(0,0,0,0.25);
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.error{ background:var(--red); }
+
+  @keyframes shake{
+    10%,90%{ transform:translateX(-2px); }
+    20%,80%{ transform:translateX(4px); }
+    30%,50%,70%{ transform:translateX(-8px); }
+    40%,60%{ transform:translateX(8px); }
+  }
+  .card.error-flash{ border-color:var(--red); animation: shake .5s; box-shadow:0 0 0 3px rgba(224,68,56,0.18); }
+
+  /* Reminder cards list */
+  .reminders-title{ font-size:14px; font-weight:700; color:var(--ink); margin-bottom:10px; }
+  #remindersList{ display:flex; flex-direction:column; gap:10px; }
+
+  .reminder-card{
+    position:relative;
+    display:flex; align-items:flex-start; gap:9px;
+    background:var(--card); border:1px solid var(--card-line); border-radius:12px;
+    padding:11px 12px 10px; box-shadow:0 2px 10px rgba(20,20,30,0.04);
+    transition: opacity .4s ease, filter .4s ease;
+  }
+  .reminder-card .r-side{
+    flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .reminder-card .r-actions-row{ display:flex; gap:6px; }
+  .reminder-card .r-close, .reminder-card .r-edit{
+    width:26px; height:26px; border-radius:50%;
+    background:var(--bg-soft); border:1px solid var(--card-line); color:var(--ink-dim);
+    font-size:13px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    padding:0;
+  }
+  .reminder-card .r-close:hover{ background:rgba(224,68,56,0.14); color:var(--red); border-color:rgba(224,68,56,0.35); }
+  .reminder-card .r-edit:hover{ background:rgba(18,168,148,0.14); color:var(--teal); border-color:rgba(18,168,148,0.35); }
+  .reminder-card .r-icon{
+    width:28px; height:28px; border-radius:8px; flex-shrink:0;
+    background:var(--amber-soft); color:var(--amber); font-size:13px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .reminder-card .r-body{ flex:1; min-width:0; }
+  .reminder-card .r-title{ font-size:13px; font-weight:700; color:var(--ink); margin-bottom:2px; }
+  .reminder-card .r-meta{ font-size:11px; color:var(--ink-dim); line-height:1.6; }
+  .reminder-card .r-meta b{ color:var(--ink); font-weight:600; }
+  .reminder-card .r-ics-btn{
+    margin-top:7px; font-size:10.5px; font-weight:700; color:var(--teal);
+    background:rgba(18,168,148,0.1); border:1px solid rgba(18,168,148,0.35);
+    border-radius:999px; padding:5px 11px; cursor:pointer; font-family:'Vazirmatn', sans-serif;
+  }
+  .reminder-card .r-ics-btn:active{ transform: scale(0.97); }
+  .reminder-card .r-ics-btn:disabled{
+    color:var(--ink-dim); background:var(--bg-soft); border-color:var(--card-line);
+    cursor:not-allowed; opacity:0.7;
+  }
+  .reminder-card.past .r-ics-btn{ color:var(--ink-dim); background:var(--bg-soft); border-color:var(--card-line); }
+  .reminder-card .r-badge{
+    font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:999px;
+    background: rgba(18,168,148,0.14); color:#0b6d5f; flex-shrink:0; white-space:nowrap;
+  }
+
+  .reminder-card.past{ opacity:0.45; filter:grayscale(0.5); }
+  .reminder-card.past .r-icon{ background:var(--bg-soft); color:var(--ink-dim); }
+  .reminder-card.past .r-badge{ background:var(--bg-soft); color:var(--ink-dim); }
+
+  /* Countdown */
+  .r-countdown-label{ font-size:10px; color:var(--ink-dim); font-weight:700; margin-top:7px; }
+  .r-countdown{
+    font-size:14px; font-weight:900; color:var(--amber); font-variant-numeric:tabular-nums;
+    letter-spacing:.3px; margin-top:1px;
+  }
+  .reminder-card.past .r-countdown{ color:var(--ink-dim); }
+
+  .cleanup-note{
+    margin-top:10px; display:flex; align-items:flex-start; gap:8px;
+    background:rgba(224,68,56,0.08); border:1px solid rgba(224,68,56,0.3);
+    border-radius:10px; padding:9px 11px; font-size:11.5px; line-height:1.8; color:#8a3a34;
+    opacity:1; filter:none;
+  }
+  .cleanup-note .cn-text{ flex:1; }
+  .cleanup-note .cn-dismiss{
+    flex-shrink:0; background:none; border:none; color:#8a3a34; font-size:13px;
+    cursor:pointer; padding:0 2px; line-height:1;
+  }
+
+  /* Simple to-do card (no date/time/reminder) */
+  .todo-input-row{ display:flex; gap:8px; margin-bottom:12px; }
+  .todo-input-row input{
+    flex:1; background:var(--bg-soft); border:1px solid var(--card-line);
+    color:var(--ink); border-radius:10px; padding:11px 14px; font-size:14px;
+    font-family:'Vazirmatn', sans-serif;
+  }
+  .todo-input-row button{
+    background:var(--teal); color:#fff; border:none; border-radius:10px;
+    padding:0 18px; font-size:13px; font-weight:700; cursor:pointer;
+    font-family:'Vazirmatn', sans-serif; white-space:nowrap;
+  }
+  .todo-input-row button:active{ transform: scale(0.97); }
+
+  #todoList{ display:flex; flex-direction:column; gap:8px; }
+  .todo-item{
+    display:flex; align-items:center; gap:10px;
+    background:var(--bg-soft); border:1px solid var(--card-line); border-radius:12px;
+    padding:11px 12px;
+  }
+  .todo-item .t-check{
+    width:20px; height:20px; border-radius:6px; border:2px solid var(--card-line);
+    background:#fff; flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:12px; color:#fff; padding:0;
+  }
+  .todo-item.done .t-check{ background:var(--teal); border-color:var(--teal); }
+  .todo-item .t-text{ flex:1; min-width:0; font-size:16px; font-weight:700; color:var(--ink); word-break:break-word; }
+  .todo-item{ transition: opacity .3s ease, background .3s ease; }
+  .todo-item.done{ opacity:0.55; background:#e4e6ee; }
+  .todo-item.done .t-text{ text-decoration:line-through; color:var(--ink-dim); }
+  .todo-item .t-del{
+    flex-shrink:0; width:26px; height:26px; border-radius:50%; border:1px solid var(--card-line);
+    background:#fff; color:var(--ink-dim); font-size:14px; cursor:pointer; line-height:1;
+    display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .todo-item .t-del:hover{ background:rgba(224,68,56,0.14); color:var(--red); border-color:rgba(224,68,56,0.35); }
+
+  .todo-empty{ font-size:12.5px; color:var(--ink-dim); text-align:center; padding:6px 0 2px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-title">ثبت قرار و کارهای روزانه</div>
+    <div class="menu-wrap">
+      <button type="button" class="menu-btn" id="menuBtn" aria-label="منو">⋮</button>
+      <div class="menu-dropdown" id="menuDropdown">
+        <button type="button" data-target="todoCard">کارهای من</button>
+        <button type="button" data-target="calendarCard">تاریخ (تقویم)</button>
+        <button type="button" data-target="timeCard">ساعت</button>
+        <button type="button" data-target="detailsCard">جزئیات قرار</button>
+        <button type="button" data-target="remindersWrap">یادآورهای ثبت‌شده</button>
+        <button type="button" id="menuReportBtn">📋 گزارش‌گیری</button>
+        <button type="button" id="menuHelpBtn">❓ راهنمای برنامه</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="calendarCard">
+    <h2>تاریخ (تقویم شمسی)</h2>
+    <div class="cal-header">
+      <button id="prevMonth">‹</button>
+      <div class="month-label" id="monthLabel">—</div>
+      <button id="nextMonth">›</button>
+    </div>
+    <div class="weekdays">
+      <span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span>
+    </div>
+    <div class="days-grid" id="daysGrid"></div>
+  </div>
+
+  <div class="card" id="timeCard">
+    <h2>ساعت</h2>
+    <div class="time-picker">
+      <select id="minuteSelect"></select>
+      <span class="time-sep">:</span>
+      <select id="hourSelect"></select>
+    </div>
+  </div>
+
+  <div class="card" id="detailsCard">
+    <h2>جزئیات قرار</h2>
+    <div class="field">
+      <label>عنوان</label>
+      <input type="text" id="titleInput" placeholder="مثلاً جلسه با علی">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>مدت</label>
+        <select class="full" id="durationSelect">
+          <option value="15" selected>۱۵ دقیقه</option>
+          <option value="30">۳۰ دقیقه</option>
+          <option value="45">۴۵ دقیقه</option>
+          <option value="60">۱ ساعت</option>
+          <option value="90">۱.۵ ساعت</option>
+          <option value="120">۲ ساعت</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>یادآوری قبل از قرار</label>
+        <select class="full" id="reminderSelect">
+          <option value="0">بدون یادآوری</option>
+          <option value="10" selected>۱۰ دقیقه قبل</option>
+          <option value="30">۳۰ دقیقه قبل</option>
+          <option value="60">۱ ساعت قبل</option>
+          <option value="1440">۱ روز قبل</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>مکان (اختیاری)</label>
+      <input type="text" id="locationInput" placeholder="مثلاً دفتر کار">
+    </div>
+    <div class="field">
+      <label>توضیحات (اختیاری)</label>
+      <textarea id="descInput" placeholder="یادداشت اضافه..."></textarea>
+    </div>
+  </div>
+
+  <div class="summary" id="summaryBox">
+    <span class="dot"></span>
+    <span id="summaryText"></span>
+  </div>
+
+  <button class="generate-btn" id="generateBtn">ثبت قرار</button>
+
+  <div id="remindersWrap" style="display:none;">
+    <div class="reminders-title">یادآورهای ثبت‌شده</div>
+    <div id="remindersList"></div>
+  </div>
+
+  <div class="card" id="todoCard">
+    <h2>لیست کارهای من</h2>
+    <div class="todo-input-row">
+      <input type="text" id="todoInput" placeholder="یک کار جدید بنویس...">
+      <button type="button" id="todoAddBtn">افزودن</button>
+    </div>
+    <div id="todoList"></div>
+    <div class="todo-empty" id="todoEmpty">فعلاً کاری اضافه نکردی</div>
+  </div>
+
+  <div class="app-footer">نظری اپلیکیشن</div>
+</div>
+
+<!-- Onboarding / help overlay -->
+<div class="overlay" id="onboardingOverlay">
+  <div class="overlay-sheet">
+    <div class="overlay-title">👋 خوش اومدی! راهنمای سریع برنامه</div>
+
+    <div class="onb-step">
+      <div class="onb-emoji">📅</div>
+      <div class="onb-text">
+        <b>۱. ثبت قرار</b>
+        <span>از تقویم یه روز و از قسمت ساعت، زمان مورد نظرت رو انتخاب کن، عنوان قرار رو بنویس و پایین دکمه «ثبت قرار» رو بزن.</span>
+      </div>
+    </div>
+
+    <div class="onb-step">
+      <div class="onb-emoji">🔔</div>
+      <div class="onb-text">
+        <b>۲. یادآوری و شمارش معکوس</b>
+        <span>هر قراری که ثبت کنی، توی لیست «یادآورهای ثبت‌شده» با یه شمارش معکوس زنده نشون داده می‌شه.</span>
+      </div>
+    </div>
+
+    <div class="onb-step">
+      <div class="onb-emoji">✏️</div>
+      <div class="onb-text">
+        <b>۳. ویرایش و حذف</b>
+        <span>روی هر کارت یادآوری، با ✏️ می‌تونی ویرایشش کنی و با × می‌تونی حذفش کنی.</span>
+      </div>
+    </div>
+
+    <div class="onb-step">
+      <div class="onb-emoji">✅</div>
+      <div class="onb-text">
+        <b>۴. کارهای روزانه</b>
+        <span>توی «لیست کارهای من» (پایین صفحه) می‌تونی کارهایی که تاریخ و ساعت مشخصی ندارن رو یادداشت و تیک بزنی.</span>
+      </div>
+    </div>
+
+    <div class="onb-step">
+      <div class="onb-emoji">📋</div>
+      <div class="onb-text">
+        <b>۵. گزارش‌گیری</b>
+        <span>از منوی سه‌نقطه بالا، گزینه «گزارش‌گیری» رو بزن تا لیست کامل و جداگانه‌ی قرارها و کارها رو ببینی.</span>
+      </div>
+    </div>
+
+    <button type="button" class="overlay-close-btn" id="onboardingCloseBtn">متوجه شدم، بزن بریم</button>
+  </div>
+</div>
+
+<!-- Report overlay -->
+<div class="overlay" id="reportOverlay">
+  <div class="overlay-sheet">
+    <div class="overlay-title">📋 گزارش‌گیری</div>
+    <div class="report-tabs">
+      <div class="report-tab active" id="reportTabReminders" data-tab="reminders">قرارهای ثبت‌شده</div>
+      <div class="report-tab" id="reportTabTodos" data-tab="todos">لیست کارها</div>
+    </div>
+    <div class="report-section active" id="reportReminders"></div>
+    <div class="report-section" id="reportTodos"></div>
+    <button type="button" class="overlay-close-btn" id="reportCloseBtn">بستن</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">یادآوری تنظیم شد ✅</div>
+
+<script>
+/* ============ Jalali <-> Gregorian conversion (jalaali algorithm) ============ */
+function div(a,b){ return ~~(a/b); }
+function mod(a,b){ return a - ~~(a/b)*b; }
+const breaks = [-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
+
+function jalCal(jy){
+  const bl = breaks.length;
+  let gy = jy + 621, leapJ = -14, jp = breaks[0], jm, jump, n, i;
+  for(i=1;i<bl;i+=1){
+    jm = breaks[i];
+    jump = jm - jp;
+    if(jy < jm) break;
+    leapJ = leapJ + div(jump,33)*8 + div(mod(jump,33),4);
+    jp = jm;
+  }
+  n = jy - jp;
+  leapJ = leapJ + div(n,33)*8 + div(mod(n,33)+3,4);
+  if(mod(jump,33) === 4 && jump - n === 4) leapJ += 1;
+  const leapG = div(gy,4) - div((div(gy,100)+1)*3,4) - 150;
+  const march = 20 + leapJ - leapG;
+  if(jump - n < 6) n = n - jump + div(jump,33)*33;
+  let leap = mod(mod(n+1,33)-1,4);
+  if(leap === -1) leap = 4;
+  return { leap: leap, gy: gy, march: march };
+}
+function g2d(gy,gm,gd){
+  let d = div((gy+div(gm-8,6)+100100)*1461,4) + div(153*mod(gm+9,12)+2,5) + gd - 34840408;
+  d = d - div(div(gy+100100+div(gm-8,6),100)*3,4) + 752;
+  return d;
+}
+function d2g(jdn){
+  let j = 4*jdn + 139361631;
+  j = j + div(div(4*jdn+183187720,146097)*3,4)*4 - 3908;
+  const i = div(mod(j,1461),4)*5 + 308;
+  const gd = div(mod(i,153),5) + 1;
+  const gm = mod(div(i,153),12) + 1;
+  const gy = div(j,1461) - 100100 + div(8-gm,6);
+  return { gy: gy, gm: gm, gd: gd };
+}
+function j2d(jy,jm,jd){
+  const r = jalCal(jy);
+  return g2d(r.gy,3,r.march) + (jm-1)*31 - div(jm,7)*(jm-7) + jd - 1;
+}
+function d2j(jdn){
+  const gy = d2g(jdn).gy;
+  let jy = gy - 621;
+  const r = jalCal(jy);
+  const jdn1f = g2d(gy,3,r.march);
+  let k = jdn - jdn1f, jm, jd;
+  if(k >= 0){
+    if(k <= 185){
+      jm = 1 + div(k,31);
+      jd = mod(k,31) + 1;
+      return { jy: jy, jm: jm, jd: jd };
+    } else {
+      k -= 186;
+    }
+  } else {
+    jy -= 1;
+    k += 179;
+    if(r.leap === 1) k += 1;
+  }
+  jm = 7 + div(k,30);
+  jd = mod(k,30) + 1;
+  return { jy: jy, jm: jm, jd: jd };
+}
+function jalaaliToGregorian(jy,jm,jd){ const g = d2g(j2d(jy,jm,jd)); return {gy:g.gy, gm:g.gm, gd:g.gd}; }
+function gregorianToJalaali(gy,gm,gd){ return d2j(g2d(gy,gm,gd)); }
+function isLeapJalaaliYear(jy){ return jalCal(jy).leap === 1; }
+function jalaaliMonthLength(jy,jm){
+  if(jm <= 6) return 31;
+  if(jm <= 11) return 30;
+  return isLeapJalaaliYear(jy) ? 30 : 29;
+}
+
+/* ============ Persian digit helpers ============ */
+const faDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+function toFa(str){ return String(str).replace(/[0-9]/g, d => faDigits[d]); }
+function pad(n){ return n.toString().padStart(2,'0'); }
+
+const monthNames = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+
+/* ============ State ============ */
+const now = new Date();
+const todayJ = gregorianToJalaali(now.getFullYear(), now.getMonth()+1, now.getDate());
+let viewYear = todayJ.jy;
+let viewMonth = todayJ.jm;
+let selectedDay = null; // {jy, jm, jd}
+
+/* ============ Calendar render ============ */
+const monthLabel = document.getElementById('monthLabel');
+const daysGrid = document.getElementById('daysGrid');
+
+function renderCalendar(){
+  monthLabel.textContent = `${monthNames[viewMonth-1]} ${toFa(viewYear)}`;
+  daysGrid.innerHTML = '';
+
+  const firstGreg = jalaaliToGregorian(viewYear, viewMonth, 1);
+  const firstJsDate = new Date(firstGreg.gy, firstGreg.gm-1, firstGreg.gd);
+  const jsDay = firstJsDate.getDay(); // 0=Sun..6=Sat
+  const offset = (jsDay + 1) % 7; // Sat=0 ... Fri=6
+
+  for(let i=0;i<offset;i++){
+    const empty = document.createElement('div');
+    empty.className = 'day-cell empty';
+    daysGrid.appendChild(empty);
+  }
+
+  const len = jalaaliMonthLength(viewYear, viewMonth);
+  for(let d=1; d<=len; d++){
+    const cell = document.createElement('div');
+    cell.className = 'day-cell';
+    cell.textContent = toFa(d);
+
+    if(viewYear === todayJ.jy && viewMonth === todayJ.jm && d === todayJ.jd){
+      cell.classList.add('today');
+    }
+    if(selectedDay && selectedDay.jy===viewYear && selectedDay.jm===viewMonth && selectedDay.jd===d){
+      cell.classList.add('selected');
+    }
+    cell.addEventListener('click', ()=>{
+      selectedDay = { jy: viewYear, jm: viewMonth, jd: d };
+      renderCalendar();
+      updateSummary();
+    });
+    daysGrid.appendChild(cell);
+  }
+}
+
+document.getElementById('prevMonth').addEventListener('click', ()=>{
+  viewMonth -= 1;
+  if(viewMonth < 1){ viewMonth = 12; viewYear -= 1; }
+  renderCalendar();
+});
+document.getElementById('nextMonth').addEventListener('click', ()=>{
+  viewMonth += 1;
+  if(viewMonth > 12){ viewMonth = 1; viewYear += 1; }
+  renderCalendar();
+});
+
+/* ============ Time selects ============ */
+const hourSelect = document.getElementById('hourSelect');
+const minuteSelect = document.getElementById('minuteSelect');
+for(let h=0;h<24;h++){
+  const o = document.createElement('option');
+  o.value = h; o.textContent = toFa(pad(h));
+  hourSelect.appendChild(o);
+}
+for(let m=0;m<60;m+=5){
+  const o = document.createElement('option');
+  o.value = m; o.textContent = toFa(pad(m));
+  minuteSelect.appendChild(o);
+}
+hourSelect.value = now.getHours();
+minuteSelect.value = Math.round(now.getMinutes()/5)*5 % 60;
+
+// Push the default time ~15 minutes into the future so picking "today" doesn't
+// silently land on a time that's already passed by the time the user hits generate
+{
+  const future = new Date(now.getTime() + 15*60000);
+  let fh = future.getHours();
+  let fm = Math.round(future.getMinutes()/5)*5;
+  if(fm >= 60){ fm = 0; fh = (fh + 1) % 24; }
+  hourSelect.value = fh;
+  minuteSelect.value = fm;
+}
+
+[hourSelect, minuteSelect, document.getElementById('titleInput')].forEach(el=>{
+  el.addEventListener('input', updateSummary);
+  el.addEventListener('change', updateSummary);
+});
+
+/* ============ Summary + generate ============ */
+const summaryText = document.getElementById('summaryText');
+const summaryBox = document.getElementById('summaryBox');
+const generateBtn = document.getElementById('generateBtn');
+
+function updateSummary(){
+  const title = document.getElementById('titleInput').value.trim();
+  if(!selectedDay){
+    summaryBox.style.display = 'none';
+    return;
+  }
+  summaryBox.style.display = 'flex';
+  const h = pad(hourSelect.value), m = pad(minuteSelect.value);
+  const dateStr = `${toFa(selectedDay.jd)} ${monthNames[selectedDay.jm-1]} ${toFa(selectedDay.jy)}`;
+  summaryText.textContent = `${title || 'قرار ملاقات'} — ${dateStr}، ساعت ${toFa(h)}:${toFa(m)}`;
+}
+
+renderCalendar();
+updateSummary();
+
+/* ============ Top-bar three-dot menu ============ */
+const menuBtn = document.getElementById('menuBtn');
+const menuDropdown = document.getElementById('menuDropdown');
+menuBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  menuDropdown.classList.toggle('open');
+});
+menuDropdown.querySelectorAll('button[data-target]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const target = document.getElementById(btn.dataset.target);
+    if(target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+    menuDropdown.classList.remove('open');
+  });
+});
+document.addEventListener('click', (e)=>{
+  if(!menuDropdown.contains(e.target) && e.target !== menuBtn){
+    menuDropdown.classList.remove('open');
+  }
+});
+
+/* ============ Onboarding tutorial (first run) ============ */
+const ONBOARDING_KEY = 'appointmentApp_onboarding_seen_v1';
+const onboardingOverlay = document.getElementById('onboardingOverlay');
+document.getElementById('onboardingCloseBtn').addEventListener('click', ()=>{
+  onboardingOverlay.classList.remove('open');
+  try{ localStorage.setItem(ONBOARDING_KEY, '1'); }catch(e){}
+});
+document.getElementById('menuHelpBtn').addEventListener('click', ()=>{
+  onboardingOverlay.classList.add('open');
+  menuDropdown.classList.remove('open');
+});
+(function maybeShowOnboarding(){
+  let seen = null;
+  try{ seen = localStorage.getItem(ONBOARDING_KEY); }catch(e){}
+  if(!seen) onboardingOverlay.classList.add('open');
+})();
+
+/* ============ Report (separate lists of reminders & todos) ============ */
+const reportOverlay = document.getElementById('reportOverlay');
+const reportReminders = document.getElementById('reportReminders');
+const reportTodos = document.getElementById('reportTodos');
+const reportTabReminders = document.getElementById('reportTabReminders');
+const reportTabTodos = document.getElementById('reportTabTodos');
+
+function buildReport(){
+  // Reminders list
+  if(reminderCards.length === 0){
+    reportReminders.innerHTML = '<div class="report-empty">هنوز قراری ثبت نشده</div>';
+  } else {
+    const now = new Date();
+    const rows = reminderCards.slice().sort((a,b)=> a.r.startLocal - b.r.startLocal).map(c=>{
+      const isPast = c.r.startLocal.getTime() < now.getTime();
+      const statusClass = isPast ? 'pending' : 'active';
+      const statusText = isPast ? 'گذشته' : 'فعال';
+      return `
+        <div class="report-row">
+          <div>
+            <div class="rr-title">${c.r.title}</div>
+            <div class="rr-meta">${c.r.dateStr}، ساعت ${c.r.timeStr}${c.r.location ? ' — ' + c.r.location : ''}</div>
+          </div>
+          <div class="rr-status ${statusClass}">${statusText}</div>
+        </div>`;
+    }).join('');
+    reportReminders.innerHTML = rows;
+  }
+
+  // Todos list
+  let todos = [];
+  try{ todos = loadTodos(); }catch(e){}
+  if(!todos || todos.length === 0){
+    reportTodos.innerHTML = '<div class="report-empty">هنوز کاری اضافه نشده</div>';
+  } else {
+    const rows = todos.map(t=>{
+      const statusClass = t.done ? 'done' : 'pending';
+      const statusText = t.done ? 'انجام‌شده' : 'باقی‌مانده';
+      return `
+        <div class="report-row">
+          <div class="rr-title">${t.text}</div>
+          <div class="rr-status ${statusClass}">${statusText}</div>
+        </div>`;
+    }).join('');
+    reportTodos.innerHTML = rows;
+  }
+}
+
+function switchReportTab(tab){
+  const isReminders = tab === 'reminders';
+  reportTabReminders.classList.toggle('active', isReminders);
+  reportTabTodos.classList.toggle('active', !isReminders);
+  reportReminders.classList.toggle('active', isReminders);
+  reportTodos.classList.toggle('active', !isReminders);
+}
+reportTabReminders.addEventListener('click', ()=> switchReportTab('reminders'));
+reportTabTodos.addEventListener('click', ()=> switchReportTab('todos'));
+
+document.getElementById('menuReportBtn').addEventListener('click', ()=>{
+  buildReport();
+  switchReportTab('reminders');
+  reportOverlay.classList.add('open');
+  menuDropdown.classList.remove('open');
+});
+document.getElementById('reportCloseBtn').addEventListener('click', ()=>{
+  reportOverlay.classList.remove('open');
+});
+
+
+/* ============ Notification-based reminder ============ */
+function showToast(msg, variant){
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.toggle('error', variant === 'error');
+  toast.classList.add('show');
+  setTimeout(()=> toast.classList.remove('show'), 4000);
+}
+
+function flashError(cardEl){
+  cardEl.classList.remove('error-flash');
+  void cardEl.offsetWidth; // restart animation if triggered twice in a row
+  cardEl.classList.add('error-flash');
+  setTimeout(()=> cardEl.classList.remove('error-flash'), 1200);
+}
+
+function fireNotification(title, body){
+  if('Notification' in window && Notification.permission === 'granted'){
+    try{
+      new Notification(title, { body: body, icon: '' });
+      return;
+    }catch(e){}
+  }
+  // Fallback if notifications aren't available/permitted while tab is open
+  showToast(title + (body ? ' — ' + body : ''));
+}
+
+document.getElementById('generateBtn').addEventListener('click', async ()=>{
+  if(!selectedDay){
+    showToast('⚠️ اول یه تاریخ از تقویم انتخاب کن', 'error');
+    flashError(document.getElementById('calendarCard'));
+    return;
+  }
+
+  if('Notification' in window && Notification.permission !== 'granted'){
+    try{ await Notification.requestPermission(); }catch(e){}
+  }
+
+  const greg = jalaaliToGregorian(selectedDay.jy, selectedDay.jm, selectedDay.jd);
+  const h = parseInt(hourSelect.value), m = parseInt(minuteSelect.value);
+  const reminderMin = parseInt(document.getElementById('reminderSelect').value);
+  const durationMin = parseInt(document.getElementById('durationSelect').value);
+  const title = document.getElementById('titleInput').value.trim() || 'قرار ملاقات';
+  const location = document.getElementById('locationInput').value.trim();
+
+  const startLocal = new Date(greg.gy, greg.gm-1, greg.gd, h, m, 0);
+  const now = new Date();
+  const msUntilStart = startLocal.getTime() - now.getTime();
+
+  if(msUntilStart <= 0){
+    showToast('⚠️ این ساعت گذشته، یادآوری ساخته نشد', 'error');
+    flashError(document.getElementById('timeCard'));
+    return;
+  }
+
+  const bodyText = location ? `مکان: ${location}` : 'موعد قرار رسید';
+  const durationLabel = document.getElementById('durationSelect').selectedOptions[0].textContent;
+  const reminderLabel = document.getElementById('reminderSelect').selectedOptions[0].textContent;
+
+  let reminderTimeoutId = null;
+  // Schedule the reminder before the appointment, if applicable
+  if(reminderMin > 0){
+    const reminderTime = new Date(startLocal.getTime() - reminderMin*60000);
+    const msUntilReminder = reminderTime.getTime() - now.getTime();
+    if(msUntilReminder > 0){
+      reminderTimeoutId = setTimeout(()=>{ fireNotification(`یادآوری: ${title}`, bodyText); }, msUntilReminder);
+    }
+  }
+
+  // Schedule the exact-time notification
+  const startTimeoutId = setTimeout(()=>{ fireNotification(title, bodyText); }, msUntilStart);
+
+  addReminderCard({
+    uid: makeUID(), sequence: 0, icsDownloaded: false,
+    title, location,
+    dateStr: `${toFa(selectedDay.jd)} ${monthNames[selectedDay.jm-1]} ${toFa(selectedDay.jy)}`,
+    timeStr: `${toFa(pad(h))}:${toFa(pad(m))}`,
+    durationLabel, reminderLabel,
+    durationMin, reminderMin,
+    startLocal,
+    startTimeoutId, reminderTimeoutId
+  });
+  saveReminders();
+
+  showToast('یادآوری با موفقیت تنظیم شد ✅');
+
+  // Reset just the text fields so the form is ready for the next reminder;
+  // date, time, duration and reminder settings stay as-is for quick back-to-back entries
+  document.getElementById('titleInput').value = '';
+  document.getElementById('locationInput').value = '';
+  document.getElementById('descInput').value = '';
+  updateSummary();
+});
+
+/* ============ Reminder cards list ============ */
+const remindersWrap = document.getElementById('remindersWrap');
+const remindersList = document.getElementById('remindersList');
+const reminderCards = []; // {el, data}
+let cardIdCounter = 0;
+
+const REMINDER_STORAGE_KEY = 'appointmentApp_reminders_v1';
+
+// Persist the active reminder cards so they're still here after closing and
+// reopening the app. Timeout IDs aren't serializable, so they get rebuilt on load.
+function saveReminders(){
+  const data = reminderCards.map(c => ({
+    uid: c.r.uid, sequence: c.r.sequence, icsDownloaded: c.r.icsDownloaded,
+    title: c.r.title, location: c.r.location,
+    dateStr: c.r.dateStr, timeStr: c.r.timeStr,
+    durationLabel: c.r.durationLabel, reminderLabel: c.r.reminderLabel,
+    durationMin: c.r.durationMin, reminderMin: c.r.reminderMin,
+    startLocal: c.r.startLocal.toISOString()
+  }));
+  try{ localStorage.setItem(REMINDER_STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+}
+
+function loadReminders(){
+  try{
+    const raw = localStorage.getItem(REMINDER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function addReminderCard(r){
+  remindersWrap.style.display = 'block';
+
+  const el = document.createElement('div');
+  el.className = 'reminder-card';
+  el.dataset.id = ++cardIdCounter;
+
+  const metaLines = [
+    `<b>تاریخ:</b> ${r.dateStr}، ساعت ${r.timeStr}`,
+    `<b>مدت:</b> ${toFa(r.durationLabel)}`,
+    `<b>یادآوری:</b> ${toFa(r.reminderLabel)}`
+  ];
+  if(r.location) metaLines.push(`<b>مکان:</b> ${r.location}`);
+
+  el.innerHTML = `
+    <div class="r-icon">🔔</div>
+    <div class="r-body">
+      <div class="r-title">${r.title}</div>
+      <div class="r-meta">${metaLines.join('<br>')}</div>
+      <div class="r-countdown-label">زمان مانده:</div>
+      <div class="r-countdown">—</div>
+      <button type="button" class="r-ics-btn">📅 ذخیره در تقویم موبایل برای آلارم</button>
+    </div>
+    <div class="r-side">
+      <div class="r-actions-row">
+        <button type="button" class="r-edit" aria-label="ویرایش یادآوری">✏️</button>
+        <button type="button" class="r-close" aria-label="حذف یادآوری">×</button>
+      </div>
+      <div class="r-badge">فعال</div>
+    </div>
+  `;
+
+  const icsBtn = el.querySelector('.r-ics-btn');
+  icsBtn.addEventListener('click', ()=>{
+    downloadICS(r, false);
+    r.icsDownloaded = true;
+    icsBtn.disabled = true;
+    icsBtn.textContent = '✓ به تقویم اضافه شد';
+    saveReminders();
+  });
+
+  function removeThisCard(){
+    if(r.startTimeoutId) clearTimeout(r.startTimeoutId);
+    if(r.reminderTimeoutId) clearTimeout(r.reminderTimeoutId);
+    if(r.icsDownloaded){
+      r.sequence += 1;
+      downloadICS(r, true);
+    }
+    el.remove();
+    const idx = reminderCards.findIndex(c => c.el === el);
+    if(idx > -1) reminderCards.splice(idx,1);
+    saveReminders();
+  }
+
+  el.querySelector('.r-close').addEventListener('click', ()=>{
+    if(r.icsDownloaded){
+      showToast('یادآوری حذف شد — فایل لغو هم دانلود شد؛ بازش کن تا از تقویم گوشی هم حذف بشه 🗑️');
+    } else {
+      showToast('یادآوری حذف شد 🗑️');
+    }
+    removeThisCard();
+  });
+
+  el.querySelector('.r-edit').addEventListener('click', ()=>{
+    document.getElementById('titleInput').value = r.title;
+    document.getElementById('locationInput').value = r.location || '';
+    document.getElementById('durationSelect').value = String(r.durationMin);
+    document.getElementById('reminderSelect').value = String(r.reminderMin);
+    hourSelect.value = r.startLocal.getHours();
+    minuteSelect.value = r.startLocal.getMinutes();
+    const j = gregorianToJalaali(r.startLocal.getFullYear(), r.startLocal.getMonth()+1, r.startLocal.getDate());
+    selectedDay = { jy: j.jy, jm: j.jm, jd: j.jd };
+    viewYear = j.jy; viewMonth = j.jm;
+    renderCalendar();
+    updateSummary();
+    removeThisCard();
+    document.getElementById('calendarCard').scrollIntoView({ behavior:'smooth', block:'start' });
+    showToast('برای ویرایش، مقادیر بالا رو اصلاح کن و دوباره «ثبت قرار» رو بزن ✏️');
+  });
+
+  // newest reminder on top
+  remindersList.insertBefore(el, remindersList.firstChild);
+  reminderCards.push({ el, r, cleanupNoted:false });
+  refreshReminderCardStates();
+  updateCountdowns();
+}
+
+function refreshReminderCardStates(){
+  const now = new Date();
+  reminderCards.forEach(c=>{
+    const isPast = now.getTime() >= c.r.startLocal.getTime();
+    c.el.classList.toggle('past', isPast);
+    const badge = c.el.querySelector('.r-badge');
+    if(badge) badge.textContent = isPast ? 'گذشته' : 'فعال';
+
+    // Once a reminder whose .ics was actually downloaded goes past,
+    // nudge the user to delete that leftover file from Downloads —
+    // the app itself has no way to remove files from the device.
+    if(isPast && c.r.icsDownloaded && !c.cleanupNoted){
+      c.cleanupNoted = true;
+      showCleanupNote(c);
+      showToast('⚠️ یادآوری گذشت — فایل ics مربوطه رو از پوشه دانلود پاک کن', 'error');
+    }
+  });
+}
+
+function showCleanupNote(c){
+  if(c.el.querySelector('.cleanup-note')) return; // already shown
+  const y = c.r.startLocal.getFullYear(), mo = pad2(c.r.startLocal.getMonth()+1), d = pad2(c.r.startLocal.getDate());
+  const hh = pad2(c.r.startLocal.getHours()), mm = pad2(c.r.startLocal.getMinutes());
+  const fileName = `reminder-${y}${mo}${d}-${hh}${mm}.ics`;
+  const note = document.createElement('div');
+  note.className = 'cleanup-note';
+  note.innerHTML = `
+    <span class="cn-text">🗑️ این قرار گذشت. فایل <b dir="ltr">${fileName}</b> در پوشه دانلود دیگه لازم نیست — خودت از اونجا پاکش کن (این برنامه به فایل‌های داخل Downloads دسترسی نداره).</span>
+    <button type="button" class="cn-dismiss" aria-label="بستن">×</button>
+  `;
+  note.querySelector('.cn-dismiss').addEventListener('click', ()=> note.remove());
+  c.el.querySelector('.r-body').appendChild(note);
+}
+setInterval(refreshReminderCardStates, 15000);
+
+function formatRemaining(ms){
+  if(ms <= 0) return 'موعد رسید';
+  let totalSec = Math.floor(ms/1000);
+  const days = Math.floor(totalSec/86400); totalSec -= days*86400;
+  const hours = Math.floor(totalSec/3600); totalSec -= hours*3600;
+  const mins = Math.floor(totalSec/60); totalSec -= mins*60;
+  const secs = totalSec;
+  const clock = `${toFa(pad(hours))}:${toFa(pad(mins))}:${toFa(pad(secs))}`;
+  return days > 0 ? `${toFa(days)} روز و ${clock}` : clock;
+}
+
+function updateCountdowns(){
+  const now = new Date();
+  reminderCards.forEach(c=>{
+    const cd = c.el.querySelector('.r-countdown');
+    if(!cd) return;
+    const diff = c.r.startLocal.getTime() - now.getTime();
+    cd.textContent = formatRemaining(diff);
+  });
+}
+setInterval(updateCountdowns, 1000);
+
+// Rebuild the reminder cards saved from a previous visit. In-tab timers
+// (for the on-screen toast/notification) only make sense if the moment is
+// still ahead of us; past ones simply render as "past". The .ics file already
+// handles the real, phone/OS-level notification independent of this tab.
+(function restoreSavedReminders(){
+  const now = new Date();
+  loadReminders().slice().reverse().forEach(rd => {
+    const startLocal = new Date(rd.startLocal);
+    const bodyText = rd.location ? `مکان: ${rd.location}` : 'موعد قرار رسید';
+    let startTimeoutId = null, reminderTimeoutId = null;
+
+    if(startLocal.getTime() > now.getTime()){
+      startTimeoutId = setTimeout(()=>{ fireNotification(rd.title, bodyText); }, startLocal.getTime() - now.getTime());
+      if(rd.reminderMin > 0){
+        const reminderTime = new Date(startLocal.getTime() - rd.reminderMin*60000);
+        const msUntilReminder = reminderTime.getTime() - now.getTime();
+        if(msUntilReminder > 0){
+          reminderTimeoutId = setTimeout(()=>{ fireNotification(`یادآوری: ${rd.title}`, bodyText); }, msUntilReminder);
+        }
+      }
+    }
+
+    addReminderCard({
+      uid: rd.uid, sequence: rd.sequence, icsDownloaded: rd.icsDownloaded,
+      title: rd.title, location: rd.location,
+      dateStr: rd.dateStr, timeStr: rd.timeStr,
+      durationLabel: rd.durationLabel, reminderLabel: rd.reminderLabel,
+      durationMin: rd.durationMin, reminderMin: rd.reminderMin,
+      startLocal, startTimeoutId, reminderTimeoutId
+    });
+  });
+  refreshReminderCardStates();
+  updateCountdowns();
+})();
+
+/* ============ Real device notifications via .ics calendar file ============ */
+/* Browser Notification API only fires while this tab stays open. To get a real
+   notification even with the browser closed, the appointment + reminder gets
+   exported as a standard .ics file that phone/desktop calendar apps (Google
+   Calendar, Apple Calendar, Outlook, ...) can import — those apps handle the
+   alarm natively at the OS level. Deleting a reminder that was added this way
+   generates a matching CANCEL file (same UID, bumped SEQUENCE) so the same
+   calendar app can remove the event too. */
+function pad2(n){ return String(n).padStart(2,'0'); }
+function makeUID(){ return 'reminder-' + Date.now() + '-' + Math.random().toString(36).slice(2) + '@appointment-app'; }
+
+function toICSDateUTC(date){
+  return date.getUTCFullYear().toString() + pad2(date.getUTCMonth()+1) + pad2(date.getUTCDate())
+    + 'T' + pad2(date.getUTCHours()) + pad2(date.getUTCMinutes()) + pad2(date.getUTCSeconds()) + 'Z';
+}
+function escapeICS(text){
+  return String(text).replace(/\\/g,'\\\\').replace(/[,;]/g, m => '\\'+m).replace(/\n/g,'\\n');
+}
+function buildICS(r, isCancel){
+  const method = isCancel ? 'CANCEL' : 'PUBLISH';
+  const status = isCancel ? 'CANCELLED' : 'CONFIRMED';
+  const endLocal = new Date(r.startLocal.getTime() + r.durationMin*60000);
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//AppointmentReminder//FA//',
+    'CALSCALE:GREGORIAN',
+    'METHOD:' + method,
+    'BEGIN:VEVENT',
+    'UID:' + r.uid,
+    'SEQUENCE:' + r.sequence,
+    'STATUS:' + status,
+    'DTSTAMP:' + toICSDateUTC(new Date()),
+    'DTSTART:' + toICSDateUTC(r.startLocal),
+    'DTEND:' + toICSDateUTC(endLocal),
+    'SUMMARY:' + escapeICS(r.title)
+  ];
+  if(r.location) lines.push('LOCATION:' + escapeICS(r.location));
+  if(!isCancel && r.reminderMin > 0){
+    lines.push('BEGIN:VALARM');
+    lines.push('ACTION:DISPLAY');
+    lines.push('DESCRIPTION:' + escapeICS(r.title));
+    lines.push('TRIGGER:-PT' + r.reminderMin + 'M');
+    lines.push('END:VALARM');
+  }
+  lines.push('END:VEVENT');
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+function downloadICS(r, isCancel){
+  const ics = buildICS(r, isCancel);
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const y = r.startLocal.getFullYear(), mo = pad2(r.startLocal.getMonth()+1), d = pad2(r.startLocal.getDate());
+  const hh = pad2(r.startLocal.getHours()), mm = pad2(r.startLocal.getMinutes());
+  a.download = `${isCancel ? 'cancel' : 'reminder'}-${y}${mo}${d}-${hh}${mm}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 3000);
+  if(!isCancel){
+    showToast('📅 فایل تقویم دانلود شد — بازش کن تا به تقویم گوشیت اضافه بشه');
+  }
+}
+
+/* ============ Simple to-do list (no date/time/reminder) ============ */
+const todoInput = document.getElementById('todoInput');
+const todoAddBtn = document.getElementById('todoAddBtn');
+const todoList = document.getElementById('todoList');
+const todoEmpty = document.getElementById('todoEmpty');
+let todoIdCounter = 0;
+
+const TODO_STORAGE_KEY = 'appointmentApp_todos_v1';
+
+function refreshTodoEmptyState(){
+  todoEmpty.style.display = todoList.children.length ? 'none' : 'block';
+}
+
+// Persist the current on-screen todo list (order + done state) to localStorage
+// so tasks survive closing the tab/app and coming back.
+function saveTodos(){
+  const items = [...todoList.children].map(el => ({
+    text: el.querySelector('.t-text').textContent,
+    done: el.classList.contains('done')
+  }));
+  try{ localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(items)); }catch(e){}
+}
+
+function loadTodos(){
+  try{
+    const raw = localStorage.getItem(TODO_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+// Done items sink to the bottom of the list, unchecked ones stay on top,
+// each group keeping its own relative order.
+function reorderTodos(){
+  const items = [...todoList.children];
+  const notDone = items.filter(el => !el.classList.contains('done'));
+  const done = items.filter(el => el.classList.contains('done'));
+  [...notDone, ...done].forEach(el => todoList.appendChild(el));
+}
+
+function addTodo(text, opts = {}){
+  const trimmed = text.trim();
+  if(!trimmed) return;
+  const { done = false, prepend = true } = opts;
+
+  const el = document.createElement('div');
+  el.className = 'todo-item' + (done ? ' done' : '');
+  el.dataset.id = ++todoIdCounter;
+  el.innerHTML = `
+    <button type="button" class="t-check" aria-label="انجام شد">✓</button>
+    <div class="t-text"></div>
+    <button type="button" class="t-del" aria-label="حذف">×</button>
+  `;
+  el.querySelector('.t-text').textContent = trimmed;
+
+  el.querySelector('.t-check').addEventListener('click', ()=>{
+    el.classList.toggle('done');
+    reorderTodos();
+    saveTodos();
+  });
+  el.querySelector('.t-del').addEventListener('click', ()=>{
+    el.remove();
+    refreshTodoEmptyState();
+    saveTodos();
+  });
+
+  if(prepend){
+    // New tasks go to the top of the "not done" section, above any finished ones.
+    const firstDone = todoList.querySelector('.todo-item.done');
+    if(firstDone){ todoList.insertBefore(el, firstDone); }
+    else{ todoList.insertBefore(el, todoList.firstChild); }
+  } else {
+    todoList.appendChild(el);
+  }
+  refreshTodoEmptyState();
+}
+
+todoAddBtn.addEventListener('click', ()=>{
+  addTodo(todoInput.value);
+  todoInput.value = '';
+  todoInput.focus();
+  saveTodos();
+});
+todoInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){
+    addTodo(todoInput.value);
+    todoInput.value = '';
+    saveTodos();
+  }
+});
+
+// Restore saved tasks (already in top-to-bottom, done-last order) on load.
+loadTodos().forEach(t => addTodo(t.text, { done: t.done, prepend: false }));
+refreshTodoEmptyState();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+</script>
+</body>
+</html>
